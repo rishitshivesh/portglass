@@ -1,7 +1,8 @@
+import { spawn } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve, delimiter } from "node:path";
-import { spawn } from "node:child_process";
+import { delimiter, join, resolve } from "node:path";
+
 const env = { ...process.env };
 const root = resolve(import.meta.dirname, "..");
 const toolchains = join(homedir(), ".rustup", "toolchains");

@@ -10,7 +10,12 @@ jobs:
           node-version: 22
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - run: npm ci
+      - run: npm run check
+      - run: npm run check:rust
+      - run: npm run test:frontend
       - run: npm run build
       - run: npm run test:core
       - run: node scripts/desktop.mjs build --debug --no-bundle

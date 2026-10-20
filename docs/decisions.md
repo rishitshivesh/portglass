@@ -23,3 +23,17 @@ Snapshots are held in memory. A five-second backend cache serializes collectors.
 ## Verification gates
 
 Parser fixtures cover process identity, PID restart distinction, basename-only output, agent signatures, IPv4/IPv6 endpoints, malformed records, deduplication and disabled collection. Native compilation and a real-machine smoke must pass before claiming a runnable desktop slice. No performance, signing or action safety gate is satisfied merely by compilation.
+
+## ADR-005: modular components, shadcn and Biome (accepted)
+
+The user requested Biome, modular code and shadcn whenever React is used. The frontend now separates IPC transport, request lifecycle, selectors, layout and feature views. Official shadcn/Base UI controls and Tailwind v4 semantic tokens replace hand-built controls and the inspector overlay. The process table renders 50 rows per page; snapshot-derived sorting and totals are memoized independently of search.
+
+Biome owns supported frontend/config formatting, import organization and recommended lint checks. Rustfmt owns Rust; Prettier is restricted to Markdown/YAML and editor metadata. CI checks all applicable languages. Repository instructions preserve these conventions for future work.
+
+The controller also fixes stale in-flight results/errors after collector-setting changes, queues the latest settings immediately and suppresses late responses after disposal. The inspector preserves each selection's actual observation timestamp. Rust listener deduplication now uses a hash set; collectors, parsers, models, cache, commands and tray setup are separate modules. These changes preserve the existing read-only scope.
+
+## ADR-006: verified foreground navigation and provider-backed attention
+
+The user requested focusing an application's window and understanding agent state/attention. Implemented an on-demand AppKit activation request through verified, same-user process ancestry; this navigates to an existing application without arbitrary launch capabilities or Accessibility. Port-origin navigation also rechecks listener ownership. Exact tab/session focus is unsupported.
+
+Activity and attention remain explicitly unknown in the running product until an authorized provider event adapter is connected. A tested normalized status model handles fresh correlated provider evidence; CPU/idle heuristics cannot manufacture certainty. Official Claude hooks and Codex App Server docs establish feasible signal mechanisms but do not prove access to all independently running sessions. See `docs/expansion-scope.md` for the next integration phase and the earlier storage/cleanup requirement, which is planned rather than implemented.

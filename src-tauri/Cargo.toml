@@ -17,3 +17,9 @@ custom-protocol = ["tauri/custom-protocol"]
 tauri = { version = "2", features = ["tray-icon"] }
 serde = { version = "1", features = ["derive"] }
 
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "=0.6.5"
+objc2-foundation = { version = "=0.3.2", default-features = false, features = ["std", "NSProcessInfo"] }
+objc2-app-kit = { version = "=0.3.2", default-features = false, features = ["std", "NSRunningApplication", "NSApplication", "libc"] }
+libc = "=0.2.191"
+
