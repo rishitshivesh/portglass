@@ -16,6 +16,6 @@ Native tests need local TCP/Unix socket access. Rust 1.91.0 and Node 22 are the 
 
 Use feature modules, checked-in shadcn primitives, semantic theme tokens and bounded collectors. Preserve scan-ID authority, cleanup confirmation/expiry, cache sanitization and same-user instance ownership. Do not add generic shell/path execution or infer agent activity from CPU.
 
-Release/distribution changes must keep published archives immutable, refuse unsigned public fallback, keep manifests/lockfile versions consistent and use actual artifact hashes. See `docs/releases/README.md`; publishing credentials belong only in GitHub secrets.
+Release/distribution changes must keep published archives immutable, refuse unsigned public fallback, keep manifests/lockfile versions consistent and use actual artifact hashes. See `docs/releases/README.md`; signing/notarization credentials stay in your local Keychain and publication uses local GitHub CLI authentication.
 
 Do not include credentials, transcripts, process command arguments or private project paths in public reports. Share minimal reproducible fixtures and redact screenshots/logs before posting. A project source license has not yet been selected.

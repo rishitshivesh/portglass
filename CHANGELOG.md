@@ -8,6 +8,6 @@
 - Local Docker-compatible engine discovery and usage summaries, including Colima profiles and OrbStack.
 - Dev Tools grouped process RSS for IDEs, SDK tools, services and language/container runtimes.
 - Modular React/shadcn frontend, Rust host boundary, Biome/rustfmt and safety/lifecycle tests.
-- Signed/notarized universal release drafts and checksum-verified Homebrew cask synchronization workflows.
+- Local signed/notarized universal DMG, ZIP and TAR.GZ releases, GitHub draft/publication tooling and checksum-verified Homebrew synchronization.
 
 No public release has been made. Provider-backed live activity/attention, exact editor/terminal tab selection, process termination, Docker prune/volume deletion, in-app updates and other OS adapters are not implemented. See `docs/expansion-scope.md` for accounting, coverage and control limits.

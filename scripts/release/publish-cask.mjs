@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -30,29 +31,24 @@ if (dryRun !== "--publish") {
   console.log("Generated verified portglass.rb; no repository changes made");
   process.exit(0);
 }
-if (!process.env.GH_TOKEN)
-  throw new Error(
-    "A repository-scoped GitHub token is required to publish the cask",
-  );
 const request = async (path, options = {}) => {
-  const response = await fetch(
-    `https://api.github.com/repos/${config.repository}/${path}`,
-    {
-      ...options,
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${process.env.GH_TOKEN}`,
-        "X-GitHub-Api-Version": "2022-11-28",
-        ...options.headers,
-      },
-    },
-  );
-  if (response.status === 404) return null;
-  if (!response.ok)
-    throw new Error(
-      `GitHub ${response.status}: cask publication failed; check workflow permissions and branch rules`,
+  const endpoint = `repos/${config.repository}${path ? `/${path}` : ""}`;
+  const args = ["api", endpoint, "--method", options.method ?? "GET"];
+  if (options.body) args.push("--input", "-");
+  try {
+    return JSON.parse(
+      execFileSync("gh", args, {
+        input: options.body,
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "pipe"],
+      }),
     );
-  return response.json();
+  } catch (error) {
+    if (String(error.stderr).includes("HTTP 404")) return null;
+    throw new Error(
+      "GitHub request failed. Check gh auth status, repository access and branch rules.",
+    );
+  }
 };
 // Reject delayed events and prereleases: only the current latest stable release
 // can advance the tap, and an older version cannot overwrite a newer cask.

@@ -1,8 +1,10 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
 import {
   assetName,
+  distributionNames,
   sha256,
   stableVersion,
   validateConfig,
@@ -65,79 +67,76 @@ export function verifyMacApp(appPath, config, version, expectedTeam) {
     run("/usr/bin/codesign", ["--verify", "-R", requirement, appPath]);
   }
 }
-const config = () =>
-  validateConfig(
-    JSON.parse(readFileSync(resolve(root, "release.config.json"), "utf8")),
+export function verifyReleaseFiles(directory, config, version) {
+  const manifest = JSON.parse(
+    readFileSync(resolve(directory, "release-manifest.json"), "utf8"),
   );
+  validateManifest(manifest, {
+    version,
+    config,
+    bytes: readFileSync(resolve(directory, assetName(version))),
+  });
+  for (const name of distributionNames(version)) {
+    const entry = manifest.distributions.find((entry) => entry.name === name);
+    const bytes = readFileSync(resolve(directory, name));
+    if (entry.sha256 !== sha256(bytes) || entry.bytes !== bytes.length)
+      throw new Error(`Distribution checksum mismatch: ${name}`);
+  }
+  return manifest;
+}
+export function verifyDistributions(directory, config, version, expectedTeam) {
+  const manifest = verifyReleaseFiles(directory, config, version);
+  const temp = mkdtempSync(resolve(tmpdir(), "portglass-verify-"));
+  try {
+    for (const name of distributionNames(version).slice(0, 2)) {
+      const output = resolve(temp, name.endsWith(".zip") ? "zip" : "tar");
+      if (name.endsWith(".zip"))
+        execFileSync("/usr/bin/ditto", [
+          "-x",
+          "-k",
+          resolve(directory, name),
+          output,
+        ]);
+      else {
+        mkdirSync(output, { recursive: true });
+        execFileSync("/usr/bin/tar", [
+          "-xzf",
+          resolve(directory, name),
+          "-C",
+          output,
+        ]);
+      }
+      verifyMacApp(
+        resolve(output, "Portglass.app"),
+        config,
+        version,
+        expectedTeam,
+      );
+    }
+    const dmg = resolve(directory, distributionNames(version)[2]);
+    execFileSync("/usr/bin/codesign", ["--verify", "--strict", dmg]);
+    execFileSync("/usr/bin/xcrun", ["stapler", "validate", dmg], {
+      stdio: "inherit",
+    });
+  } finally {
+    rmSync(temp, { recursive: true, force: true });
+  }
+  return manifest;
+}
 if (process.argv[1] === resolve(import.meta.filename)) {
   const [command, version, directory] = process.argv.slice(2);
-  stableVersion(version);
-  const settings = config();
-  const output = resolve(directory ?? "release-assets");
-  if (command === "package") {
-    const app = resolve(
-      root,
-      "src-tauri/target/universal-apple-darwin/release/bundle/macos/Portglass.app",
-    );
-    if (!process.env.APPLE_TEAM_ID)
-      throw new Error("APPLE_TEAM_ID is required before packaging a release");
-    verifyMacApp(app, settings, version, process.env.APPLE_TEAM_ID);
-    mkdirSync(output, { recursive: true });
-    const name = assetName(version);
-    const archive = resolve(output, name);
-    execFileSync(
-      "/usr/bin/ditto",
-      ["-c", "-k", "--sequesterRsrc", "--keepParent", app, archive],
-      { stdio: "inherit" },
-    );
-    const bytes = readFileSync(archive);
-    const checksum = sha256(bytes);
-    const commit = execFileSync("git", ["rev-parse", "HEAD"], {
-      cwd: root,
-      encoding: "utf8",
-    }).trim();
-    const manifest = {
-      schemaVersion: 1,
-      version,
-      repository: settings.repository,
-      bundleId: settings.bundleId,
-      minimumMacOS: settings.minimumMacOS,
-      architectures: ["arm64", "x86_64"],
-      notarized: true,
-      commit,
-      asset: { name, sha256: checksum, bytes: bytes.length },
-    };
-    writeFileSync(
-      resolve(output, "release-manifest.json"),
-      `${JSON.stringify(manifest, null, 2)}\n`,
-    );
-    writeFileSync(resolve(output, "SHA256SUMS"), `${checksum}  ${name}\n`);
-    console.log(`Verified and packaged ${name}`);
-  } else if (command === "verify") {
-    const bytes = readFileSync(resolve(output, assetName(version)));
-    validateManifest(
-      JSON.parse(
-        readFileSync(resolve(output, "release-manifest.json"), "utf8"),
-      ),
-      { version, config: settings, bytes },
-    );
-    const unpacked = resolve(output, "verified-app");
-    mkdirSync(unpacked, { recursive: true });
-    execFileSync("/usr/bin/ditto", [
-      "-x",
-      "-k",
-      resolve(output, assetName(version)),
-      unpacked,
-    ]);
-    verifyMacApp(
-      resolve(unpacked, "Portglass.app"),
-      settings,
-      version,
-      process.env.APPLE_TEAM_ID,
-    );
-    console.log(
-      "Release checksum, app identity, universal architectures and notarization verified",
-    );
-  } else
-    throw new Error("Use artifact.mjs package|verify X.Y.Z OUTPUT_DIRECTORY");
+  if (command !== "verify")
+    throw new Error("Use artifact.mjs verify X.Y.Z OUTPUT_DIRECTORY");
+  const config = validateConfig(
+    JSON.parse(readFileSync(resolve(root, "release.config.json"), "utf8")),
+  );
+  verifyDistributions(
+    resolve(directory ?? "release-assets"),
+    config,
+    stableVersion(version),
+    process.env.APPLE_TEAM_ID,
+  );
+  console.log(
+    "All distribution checksums, application signatures and notarization verified",
+  );
 }

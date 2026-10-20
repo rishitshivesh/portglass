@@ -4,14 +4,24 @@ Your development machine, under the glass. A macOS-first, observation-first Taur
 
 ## Install and releases
 
-The first signed public release is pending Apple signing/notarization credentials. Once that release and Homebrew synchronization succeed:
+The first signed public release is pending local Developer ID setup and the Intel Rust target. Releases are built and published from your Mac; GitHub Actions is not required. Each release includes a drag-to-Applications DMG, ZIP and TAR.GZ.
+
+```sh
+npm run release:doctor
+# After signing setup, clean source and a matching local version tag:
+npm run release:local -- 0.1.0
+npm run release:upload -- 0.1.0   # Creates a GitHub draft
+npm run release:publish -- 0.1.0 # Publishes and synchronizes Homebrew
+```
+
+See [Apple signing setup](docs/releases/apple-signing.md), [the local release runbook](docs/releases/README.md), [installation and upgrades](docs/installation.md) and [changelog](CHANGELOG.md). Public downloads require Developer ID signing and Apple notarization. No unsigned public fallback or in-app updater is enabled.
+
+Once the first release and cask synchronization succeed:
 
 ```sh
 brew tap rishitshivesh/portglass https://github.com/rishitshivesh/portglass.git
 brew install --cask rishitshivesh/portglass/portglass
 ```
-
-See [installation and upgrades](docs/installation.md), the [release runbook](docs/releases/README.md) and [changelog](CHANGELOG.md). Release tags build a signed/notarized universal macOS app into a reviewable GitHub draft. Publishing that stable draft advances the checksum-verified cask. There is no unsigned public fallback or in-app updater.
 
 ## Run
 

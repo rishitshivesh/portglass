@@ -2,7 +2,7 @@
 
 Portglass supports macOS. Signed releases will contain one universal app for Apple Silicon and Intel, with a configured minimum of macOS 12. Actual hardware/OS validation is recorded per release.
 
-**The first signed release has not been published yet.** These installation commands become usable after both release publication and cask synchronization succeed. Until then, use the development instructions in the root README.
+**The first signed release has not been published yet.** These installation commands become usable after local release publication and cask synchronization succeed. Until then, use the development instructions in the root README.
 
 ## Homebrew
 
@@ -22,15 +22,21 @@ brew upgrade --cask rishitshivesh/portglass/portglass
 
 Open it again to load the updated version. A normal close hides the window; it does not quit. Launching another copy activates the existing instance on the same macOS account.
 
-## GitHub download
+## Direct GitHub downloads
 
-From [GitHub Releases](https://github.com/rishitshivesh/portglass/releases), download the universal macOS ZIP from a published stable release, extract it and move `Portglass.app` to Applications. Release assets also include `SHA256SUMS` and `release-manifest.json`. Verify the downloaded ZIP locally:
+From [GitHub Releases](https://github.com/rishitshivesh/portglass/releases), choose a published stable release:
+
+- **DMG:** open the disk image and drag Portglass.app to the Applications shortcut. Eject the disk image, then open the app from Applications.
+- **ZIP:** extract and move Portglass.app to Applications.
+- **TAR.GZ:** extract the archive and move Portglass.app to Applications.
+
+All formats carry the same signed/notarized universal application. SHA256SUMS and release-manifest.json describe all downloads. To check a DMG, for example:
 
 ```sh
-shasum -a 256 Portglass-X.Y.Z-universal-macos.zip
+shasum -a 256 Portglass-X.Y.Z-universal-macos.dmg
 ```
 
-Compare the output with the release's SHA256SUMS. The release pipeline signs with Developer ID, notarizes with Apple and staples the ticket. If macOS rejects an official release, verify its source/checksum and report the version and exact warning to the maintainer. Do not disable Gatekeeper, strip quarantine or use `sudo` as an installation workaround.
+Compare with SHA256SUMS. The local release process verifies Developer ID signing, Apple notarization and stapled tickets before upload. If macOS rejects an official release, verify its source/checksum and report the version and exact warning. Do not disable Gatekeeper, strip quarantine or use sudo as an installation workaround.
 
 ## Permissions and data
 

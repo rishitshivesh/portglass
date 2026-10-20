@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
+import { verifyReleaseFiles } from "./artifact.mjs";
 import {
   assertPublishedRelease,
   assetName,
   compareVersions,
+  distributionNames,
   renderCask,
   sha256,
   validateManifest,
@@ -19,13 +24,18 @@ const config = {
 };
 const bytes = Buffer.from("fixture archive");
 const manifest = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   version: "0.1.0",
   repository: config.repository,
   bundleId: config.bundleId,
   minimumMacOS: "12.0",
   architectures: ["arm64", "x86_64"],
   notarized: true,
+  distributions: distributionNames("0.1.0").map((name) => ({
+    name,
+    sha256: sha256(bytes),
+    bytes: bytes.length,
+  })),
   commit: "a".repeat(40),
   asset: {
     name: assetName("0.1.0"),
@@ -53,6 +63,7 @@ test("only complete notarized universal archives with matching bytes can generat
   for (const modified of [
     { ...manifest, notarized: false },
     { ...manifest, architectures: ["arm64"] },
+    { ...manifest, distributions: manifest.distributions.slice(0, 2) },
     { ...manifest, asset: { ...manifest.asset, sha256: "0".repeat(64) } },
   ])
     assert.throws(() =>
@@ -92,4 +103,30 @@ test("version bump updates all manifests and lockfiles and rejects drift/downgra
     files["src-tauri/Cargo.lock"],
     changed["src-tauri/Cargo.lock"],
   );
+});
+
+test("tar and DMG are required and independently hashed before distribution", () => {
+  const directory = mkdtempSync(join(tmpdir(), "portglass-manifest-test-"));
+  try {
+    for (const name of distributionNames("0.1.0"))
+      writeFileSync(join(directory, name), bytes);
+    writeFileSync(
+      join(directory, "release-manifest.json"),
+      JSON.stringify(manifest),
+    );
+    assert.equal(
+      verifyReleaseFiles(directory, config, "0.1.0").version,
+      "0.1.0",
+    );
+    writeFileSync(
+      join(directory, distributionNames("0.1.0")[1]),
+      "modified tar archive",
+    );
+    assert.throws(
+      () => verifyReleaseFiles(directory, config, "0.1.0"),
+      /checksum mismatch/,
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

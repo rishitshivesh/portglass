@@ -1,22 +1,10 @@
 import { spawn } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
-import { homedir } from "node:os";
-import { delimiter, join, resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { rustEnvironment } from "./rust-env.mjs";
 
-const env = { ...process.env };
 const root = resolve(import.meta.dirname, "..");
-const toolchains = join(homedir(), ".rustup", "toolchains");
-if (existsSync(toolchains)) {
-  const stable = readdirSync(toolchains).find(
-    (n) =>
-      n.startsWith("stable-") &&
-      existsSync(join(toolchains, n, "bin", "cargo")),
-  );
-  if (stable)
-    env.PATH = join(toolchains, stable, "bin") + delimiter + (env.PATH ?? "");
-}
-if (!existsSync(join(homedir(), ".cargo")))
-  env.CARGO_HOME = join(root, ".tooling", "cargo");
+const env = rustEnvironment(root);
 const args = process.argv.slice(2);
 const binary = join(root, "src-tauri", "target", "debug", "portglass");
 if (args[0] === "dev" && existsSync(binary)) {

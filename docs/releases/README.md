@@ -1,42 +1,35 @@
-# Releases and Homebrew
+# Local releases and Homebrew
 
-Portglass ships as a signed, notarized universal macOS app, downloaded from GitHub Releases and installed directly or through a custom Homebrew cask. The minimum configured macOS version is 12.0; Apple Silicon and Intel binaries share one archive. The native runtime remains macOS-only.
+Build, sign, notarize and publish Portglass from your Mac. **GitHub Actions is not required.** GitHub hosts release downloads and the custom Homebrew tap; its CLI uses your existing local login. CI is manual-only, and there are no automatic release workflows or tag-triggered jobs.
 
-**Current status:** release tooling is implemented, but no public release or installable cask exists yet. Apple signing/notarization secrets must be configured first. The project has no selected source license; this change does not invent one. Preserve all existing third-party notices.
+Public distribution remains blocked until a valid Developer ID Application identity is available locally. The current doctor also reports the Intel Rust target missing. No signed public release or installable cask exists yet. Start with [Apple signing setup](apple-signing.md).
 
-## Repository and tap
+## Downloads people can use
 
-The application repository doubles as the tap. No second repository, cross-repository token or external package-hosting service is required. After the first signed release is published and its Homebrew workflow succeeds:
+Each release contains the same universal, signed/notarized app for Apple Silicon and Intel, configured for macOS 12 or later:
 
-```sh
-brew tap rishitshivesh/portglass https://github.com/rishitshivesh/portglass.git
-brew install --cask rishitshivesh/portglass/portglass
-```
+| File                                     | Installation                                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| `Portglass-X.Y.Z-universal-macos.dmg`    | Open the disk image and drag Portglass.app to its Applications shortcut              |
+| `Portglass-X.Y.Z-universal-macos.zip`    | Extract and move Portglass.app to Applications                                       |
+| `Portglass-X.Y.Z-universal-macos.tar.gz` | Extract and move Portglass.app to Applications                                       |
+| `SHA256SUMS`                             | Checksums for all three downloads                                                    |
+| `release-manifest.json`                  | Source commit, version, architectures, notarization policy and download hashes/sizes |
 
-This is a custom tap, not a submission to Homebrew's central cask repository. `Casks/portglass.rb` is generated from real verified release bytes only; it is absent before that point. Do not create dummy checksums or use `sha256 :no_check`.
+The DMG is a read-only compressed disk image containing the app and an Applications shortcut. It uses `hdiutil`; building it does not automate Finder or require an installer package. ZIP/TAR preserve the stapled app. These are direct-download distribution formats, with no Mac App Store listing required. [Tauri's DMG guidance](https://v2.tauri.app/distribute/dmg/)
 
-## One-time maintainer setup
+## One-time setup
 
-In the GitHub repository, open Settings → Environments and create `release`. Add these environment secrets there, or configure repository secrets with the same names:
+- Follow [Apple signing setup](apple-signing.md): local Developer ID Application certificate/private key, Keychain notarization profile, and both Rust targets.
+- Install dependencies with `npm ci`; Node 22+ and the supported Rust toolchain are needed.
+- Authenticate the GitHub CLI locally with `gh auth login` if necessary, with write access to `rishitshivesh/portglass`. Do not copy a GitHub token into source or chat.
+- Run `npm run release:doctor` to inspect tools, targets and certificate availability. It does not sign, upload or publish.
 
-| Secret                       | Value                                                                            |
-| ---------------------------- | -------------------------------------------------------------------------------- |
-| `APPLE_CERTIFICATE`          | Base64 of an exported Developer ID Application `.p12`, including its private key |
-| `APPLE_CERTIFICATE_PASSWORD` | Export password for that `.p12`                                                  |
-| `APPLE_SIGNING_IDENTITY`     | Exact `Developer ID Application: … (TEAMID)` identity                            |
-| `APPLE_ID`                   | Apple account email used for notarization                                        |
-| `APPLE_PASSWORD`             | Apple **app-specific** password, not the normal account password                 |
-| `APPLE_TEAM_ID`              | Ten-character Apple Developer team ID                                            |
+Your signing private key and Apple notarization credentials stay in Keychain. The binary is submitted to Apple's notary service, and signed downloads go to GitHub only when you run the upload/publish commands. Local hidden notarization receipts are not uploaded.
 
-Use your Apple Developer account and GitHub's secret entry UI. Do not paste keys/passwords into issues, chat, commits, release notes or logs. The pipeline does not create accounts, certificates or additional credentials. It fails before building when required secrets are absent. A free testing identity or ad-hoc signing is insufficient for this release policy. [Tauri signing and notarization guide](https://v2.tauri.app/distribute/sign/macos/)
+## Prepare the version and source
 
-Keep Actions enabled. CI has read-only repository access; the release and Homebrew publishing jobs request `contents: write` only for their own repository. Third-party Actions are pinned to inspected commit SHAs. The build validates that the tag is reachable from `main` before using signing secrets. Restrict who can push release tags using your repository's rules. Any optional environment review settings should reflect your maintenance process.
-
-The Homebrew publisher writes only `Casks/portglass.rb` on the default branch through the Contents API, using the existing blob SHA for conflict detection. If branch rules prohibit this bot write, it fails rather than bypassing protection; a maintainer can commit the generated cask through a normal PR. No PAT is needed for the default setup. [GitHub token permissions](https://docs.github.com/en/actions/tutorials/authenticate-with-github_token)
-
-## Prepare a release
-
-The first release can use the current `0.1.0` version after its changes are merged and verified. Later versions use:
+The first release can use the current `0.1.0`. For a subsequent version:
 
 ```sh
 npm run release:version -- 0.2.0
@@ -44,71 +37,90 @@ npm run format
 npm run release:verify -- v0.2.0
 ```
 
-The version command updates the npm manifest and root lock entry, Tauri configuration, Cargo package and its Cargo.lock entry together. It refuses version drift and downgrades. The displayed UI version comes from the same npm manifest at build time. No npm package is published.
+The bump synchronizes npm, Tauri, Cargo and both lockfiles, rejects drift/downgrades, and leaves dependency versions intact. The UI version comes from the same npm manifest. Update `CHANGELOG.md` and review product limits. The project source license remains unselected; this release setup does not choose one.
 
-Update `CHANGELOG.md`, keep the supported platforms and minimum macOS version accurate, run CI and review outstanding limitations. Commit the version/changelog changes and merge them to `main` before tagging. Then, for example:
-
-```sh
-git tag -a v0.2.0 -m "Portglass 0.2.0"
-git push origin v0.2.0
-```
-
-Only stable `vX.Y.Z` tags are supported. Prerelease syntax and branch refs are rejected. The Signed macOS release workflow also supports Run workflow with an existing stable tag for recovery.
-
-## Build and draft
-
-The workflow:
-
-1. Checks out the exact tag and verifies ancestry plus all application/lockfile versions.
-2. Requires the six Apple secrets, installs locked npm dependencies, and runs formatting, frontend/release tests and native tests.
-3. Builds both macOS architectures with Rust 1.91.0 and Tauri's universal target, using the exported Developer ID certificate and notarization credentials.
-4. Verifies bundle identity/version/minimum OS, both binary architectures, strict code signing, expected Apple team, Gatekeeper assessment and the stapled notarization ticket.
-5. Creates a ZIP containing `Portglass.app`, SHA256SUMS and a versioned release manifest containing its SHA-256, byte size and source commit.
-6. Creates a **draft** GitHub Release and uploads artifacts. It never automatically publishes the draft, overwrites a public release or enables in-app updates.
-
-Release assets are:
-
-```text
-Portglass-X.Y.Z-universal-macos.zip
-SHA256SUMS
-release-manifest.json
-```
-
-The manifest's notarized flag is written only after the native checks pass; downstream Homebrew verification repeats the native checks after download. These checks establish distribution signatures and packaging, not product completeness or correctness on every supported OS.
-
-## Review, publish and synchronize Homebrew
-
-Wait for the build workflow to succeed. Download the draft ZIP to a clean test Mac/account and verify normal launching, singleton behavior, ports/processes, tool memory, storage coverage/cache and scoped controls. Check both architectures on real hardware before claiming both were smoke-tested. Include the known limits from `docs/expansion-scope.md` in the release notes.
-
-Review generated notes and publish the draft in GitHub when ready. That human publication triggers Publish Homebrew cask. It downloads the versioned ZIP/manifest, verifies checksum, universal app identity, code signing, Gatekeeper and stapled ticket, generates the Ruby cask and checks Ruby syntax plus Homebrew style in a temporary local validation tap. It advances the default-branch cask only if this is GitHub's latest published stable release and no version downgrade or same-version checksum change is detected.
-
-Draft/prerelease/manual unsigned uploads cannot update the tap. Token-created events may not trigger another workflow, so the Homebrew workflow also supports Run workflow with the latest stable tag. See [GitHub's event restrictions](https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-when-your-workflow-runs/triggering-a-workflow).
-
-When the cask workflow succeeds, test an install and upgrade through Homebrew before announcing availability. Published archives must not be replaced under the same tag. Corrections ship as a higher patch version.
-
-## Recovery
-
-- **Secrets missing:** configure the `release` environment secrets and rerun the workflow. No unsigned public fallback exists.
-- **Build/notary failure:** read the failed job; don't publish its draft. Notarization can take time and runner access to Apple is required.
-- **Duplicate draft assets on retry:** uploads intentionally do not use `--clobber`. Review/remove the incomplete draft or its draft assets before retrying. Never delete/replace public artifacts for the same version.
-- **Cask bot blocked by branch rules:** generate the cask locally from the downloaded verified assets, then use the normal PR process. Do not weaken branch protections to bypass a failed update.
-- **Delayed/older release event:** the publisher refuses to downgrade the tap. Trigger synchronization for the current latest stable release instead.
-- **Bad published build:** ship a new patch release. Do not repoint a versioned URL or silently change a checksum. An older GitHub archive remains available for deliberate rollback.
-
-For a manual cask regeneration, download the expected ZIP and manifest into a local directory, then run on macOS:
+Commit and review the release source, normally on `main`, then create the tag locally. For the first release:
 
 ```sh
-node scripts/release/artifact.mjs verify 0.2.0 /path/to/downloads
-node scripts/release/publish-cask.mjs v0.2.0 /path/to/downloads
-node scripts/release/check-cask.mjs /path/to/downloads/portglass.rb
+git tag -a v0.1.0 -m "Portglass 0.1.0"
 ```
 
-This generates a cask without mutating GitHub. The workflow alone passes `--publish`. Do not run against unreviewed archives from arbitrary sources.
+Only stable `vX.Y.Z` tags are supported. The release build requires a clean worktree and HEAD to match that tag, so the manifest identifies the exact source used.
 
-## Installation and upgrades
+## Build locally
 
-See [installation instructions](../installation.md). Homebrew owns the installed app; `brew upgrade --cask rishitshivesh/portglass/portglass` upgrades it. Quit the running older instance first so the next launch loads the updated executable. The stable app identifier is unchanged, preserving same-user singleton behavior and local cache location.
+After exporting the signing identity/team/profile described in the Apple guide:
 
-No Tauri in-app updater is enabled. Adding one would require a separate signed-update protocol/key and configuration review; GitHub release hosting does not itself create an automatic updater.
+```sh
+npm run release:local -- 0.1.0
+```
 
-References: [Homebrew tap maintenance](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap), [cask format and checksums](https://docs.brew.sh/Cask-Cookbook), [Tauri macOS distribution](https://v2.tauri.app/distribute/macos-application-bundle/).
+The command runs Biome, rustfmt, frontend/release tests and native collector/singleton tests, builds both architectures with Tauri, and signs the app using the local certificate. It submits a temporary ZIP to Apple through the named Keychain profile, requires Accepted status and staples the app ticket.
+
+It then creates ZIP, TAR.GZ and a drag-to-Applications DMG. The DMG is signed, submitted to Apple and stapled separately. App identity/version/minimum OS, both executable architectures, strict code signing, expected team, Gatekeeper assessment and stapled tickets are checked. Both archives are extracted and verified again. All three files are hashed before the manifest and SHA256SUMS are accepted.
+
+Outputs go to ignored `release-assets/v0.1.0/`. Nothing is uploaded by this command. Existing release directories are not overwritten. Notarization uses the network and can take time; missing credentials, rejection or any verification failure stops the process with no unsigned fallback.
+
+## Upload a GitHub draft
+
+```sh
+npm run release:upload -- 0.1.0
+```
+
+This revalidates all distributions, confirms the source manifest matches the local tag, verifies the origin repository, pushes that tag and creates/uploads a GitHub **draft**. It does not publish the release. Only the three downloads, SHA256SUMS and manifest are uploaded. No passwords, keys, receipts or cache data are included.
+
+Review release notes and test the draft downloads on appropriate Macs/accounts. Build success does not prove behavior on every supported OS. Test both hardware architectures before claiming both were smoke-tested. Published downloads must never be silently replaced under the same version.
+
+## Publish and synchronize Homebrew
+
+When the draft is reviewed and ready:
+
+```sh
+npm run release:publish -- 0.1.0
+```
+
+This validates the local downloads and generated cask, publishes the draft as the latest stable GitHub Release and updates `Casks/portglass.rb` through GitHub's API using local CLI authentication. No Actions runner, GitHub signing secrets or cross-repository PAT is needed.
+
+Homebrew uses the exact ZIP version and checksum. Cask updates reject drafts/prereleases, stale non-latest events, downgrades and same-version checksum replacement. The Contents API uses the existing file SHA for conflict detection and preserves unrelated files. If branch rules prohibit writing the cask, it fails rather than bypassing protection; commit the generated cask through a normal PR.
+
+If you publish the reviewed draft through GitHub's web UI instead, or only cask synchronization needs retrying:
+
+```sh
+npm run release:cask -- 0.1.0
+```
+
+A network/branch-rule failure after GitHub publication may leave the release public while the cask is still pending. Correct the issue and retry cask synchronization; do not reupload or replace public archives.
+
+After the cask is synchronized:
+
+```sh
+brew tap rishitshivesh/portglass https://github.com/rishitshivesh/portglass.git
+brew install --cask rishitshivesh/portglass/portglass
+```
+
+This repository doubles as the custom tap. No second tap repository is required. It is separate from Homebrew's central cask repository. Before the first verified publication there is intentionally no placeholder `portglass.rb` or fake checksum.
+
+## Recovery and manual verification
+
+- **Doctor fails:** follow the Apple guide. The current machine needs a Developer ID Application identity and Intel Rust target.
+- **Notarization rejected:** inspect the local hidden receipt and Apple's submission log. Do not publish. Correct the app and use a new reviewed source/version as appropriate.
+- **Incomplete local attempt:** inspect it first. You may remove only that unpublished local `release-assets/vX.Y.Z` directory to retry. The helper never deletes it automatically.
+- **Duplicate draft assets:** uploads do not use `--clobber`. Review/remove incomplete draft assets yourself before retrying. Public releases are not overwritten.
+- **Cask branch update blocked:** use the generated `portglass.rb` through a normal PR or retry synchronization after addressing repository policy. Do not weaken policy just to bypass an error.
+- **Bad public release:** ship a higher patch version; don't repoint an existing version URL or checksum.
+
+Independent local verification/regeneration:
+
+```sh
+node scripts/release/artifact.mjs verify 0.1.0 release-assets/v0.1.0
+node scripts/release/publish-cask.mjs v0.1.0 release-assets/v0.1.0
+node scripts/release/check-cask.mjs release-assets/v0.1.0/portglass.rb
+```
+
+The cask checker creates a temporary local tap because Homebrew requires one, performs Ruby syntax and Homebrew style checks, then removes it. It does not install an app or persist a developer-mode preference.
+
+## Upgrades and support
+
+See [installation instructions](../installation.md). Quit the existing Portglass instance before upgrading so the next launch loads the new binary. The stable app identifier preserves same-user singleton/cache behavior. Use `brew upgrade --cask rishitshivesh/portglass/portglass` or a later signed GitHub download. No in-app updater is enabled.
+
+References: [Apple Developer ID](https://developer.apple.com/help/account/certificates/create-developer-id-certificates/), [Apple notarization](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow), [Homebrew taps](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap), [cask checksums](https://docs.brew.sh/Cask-Cookbook).

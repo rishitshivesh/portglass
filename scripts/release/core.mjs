@@ -33,13 +33,18 @@ export function validateConfig(config) {
 }
 export const assetName = (version) =>
   `Portglass-${stableVersion(version)}-universal-macos.zip`;
+export const distributionNames = (version) => [
+  assetName(version),
+  `Portglass-${stableVersion(version)}-universal-macos.tar.gz`,
+  `Portglass-${stableVersion(version)}-universal-macos.dmg`,
+];
 export const sha256 = (bytes) =>
   createHash("sha256").update(bytes).digest("hex");
 export function validateManifest(manifest, { version, config, bytes }) {
   validateConfig(config);
   stableVersion(version);
   if (
-    manifest.schemaVersion !== 1 ||
+    manifest.schemaVersion !== 2 ||
     manifest.version !== version ||
     manifest.repository !== config.repository ||
     manifest.bundleId !== config.bundleId ||
@@ -48,6 +53,25 @@ export function validateManifest(manifest, { version, config, bytes }) {
     !Array.isArray(manifest.architectures) ||
     [...manifest.architectures].sort().join(",") !== "arm64,x86_64" ||
     !/^[a-f0-9]{40}$/.test(manifest.commit) ||
+    !Array.isArray(manifest.distributions) ||
+    manifest.distributions.length !== 3 ||
+    distributionNames(version).some(
+      (name) =>
+        manifest.distributions.filter(
+          (entry) =>
+            entry.name === name &&
+            /^[a-f0-9]{64}$/.test(entry.sha256) &&
+            entry.sha256.length === 64 &&
+            Number.isSafeInteger(entry.bytes) &&
+            entry.bytes > 0,
+        ).length !== 1,
+    ) ||
+    !manifest.distributions.some(
+      (entry) =>
+        entry.name === assetName(version) &&
+        entry.sha256 === manifest.asset?.sha256 &&
+        entry.bytes === manifest.asset?.bytes,
+    ) ||
     manifest.asset?.name !== assetName(version) ||
     manifest.asset?.sha256 !== sha256(bytes) ||
     manifest.asset?.bytes !== bytes.length
