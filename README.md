@@ -2,6 +2,17 @@
 
 Your development machine, under the glass. A macOS-first, observation-first Tauri 2 + React/TypeScript + Rust desktop application.
 
+## Install and releases
+
+The first signed public release is pending Apple signing/notarization credentials. Once that release and Homebrew synchronization succeed:
+
+```sh
+brew tap rishitshivesh/portglass https://github.com/rishitshivesh/portglass.git
+brew install --cask rishitshivesh/portglass/portglass
+```
+
+See [installation and upgrades](docs/installation.md), the [release runbook](docs/releases/README.md) and [changelog](CHANGELOG.md). Release tags build a signed/notarized universal macOS app into a reviewable GitHub draft. Publishing that stable draft advances the checksum-verified cask. There is no unsigned public fallback or in-app updater.
+
 ## Run
 
 Requires Node 22+, npm, a stable Rust toolchain and Xcode Command Line Tools.

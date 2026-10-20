@@ -84,7 +84,7 @@ export function AppShell({
           </div>
           <Separator />
           <p className="pt-4 text-[10px] text-muted-foreground">
-            Portglass v0.1 · MACOS
+            Portglass v{__APP_VERSION__} · MACOS
           </p>
         </div>
       </aside>

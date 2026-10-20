@@ -27,6 +27,10 @@
   "bundle": {
     "active": true,
     "targets": ["app"],
-    "icon": ["icons/icon.png", "icons/icon.icns"]
+    "icon": ["icons/icon.png", "icons/icon.icns"],
+    "shortDescription": "Visibility into local developer resources and AI agent processes",
+    "macOS": {
+      "minimumSystemVersion": "12.0"
+    }
   }
 }

@@ -3,3 +3,7 @@ dist/
 src-tauri/target/
 .DS_Store
 .tooling/
+
+release-assets/
+*.p12
+*.p8
