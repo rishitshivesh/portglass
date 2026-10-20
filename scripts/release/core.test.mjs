@@ -114,6 +114,11 @@ test("tar and DMG are required and independently hashed before distribution", ()
       join(directory, "release-manifest.json"),
       JSON.stringify(manifest),
     );
+    const checksumLines = distributionNames("0.1.0")
+      .map((name) => `${sha256(bytes)}  ${name}`)
+      .join("\n");
+    const checksums = `${checksumLines}\n`;
+    writeFileSync(join(directory, "SHA256SUMS"), checksums);
     assert.equal(
       verifyReleaseFiles(directory, config, "0.1.0").version,
       "0.1.0",

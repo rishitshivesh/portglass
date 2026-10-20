@@ -34,11 +34,11 @@ The inspector records the timestamp alongside the selected resource, so a later 
 
 Styles use shared semantic tokens in `src/style.css`; shadcn variants own component appearance. Raw palette values belong only in the theme. Generated primitive lint exceptions are narrow and documented: explicit group roles preserve shadcn form composition; label forwarding cannot be statically inferred; pointer-to-input focus is a convenience alongside a directly tabbable input. Application accessibility checks remain enabled. Reduced-motion overrides intentionally take precedence over component animations.
 
-CI runs Biome, rustfmt, frontend lifecycle tests, Rust collector tests and both frontend/native builds on macOS. The workflow must run remotely before CI itself can be described as verified.
+The manual CI workflow runs Biome, rustfmt, frontend lifecycle tests, Rust collector tests and both frontend/native builds on macOS. The workflow must run remotely before CI itself can be described as verified.
 
 ## Storage and singleton verification
 
-`npm run test:core` includes hard-link/nesting, omitted coverage, cancellation/limits, scan-ID isolation, expiry, target replacement and Docker estimate parsing. `node scripts/desktop.mjs test:core --bin portglass` covers a cold-start race between eight claimants, existing-owner activation and reacquisition after dropping the owner. Socket tests need local socket access. CI includes both test targets.
+`npm run test:core` includes hard-link/nesting, omitted coverage, cancellation/limits, scan-ID isolation, expiry, target replacement and Docker estimate parsing. `node scripts/desktop.mjs test:core --bin portglass` covers a cold-start race between eight claimants, existing-owner activation and reacquisition after dropping the owner. Socket tests need local socket access. The manual CI workflow and local release checks include both test targets.
 
 `node scripts/test-instance.mjs` is a manual integration check requiring an already running app. It launches the native executable and a temporary copy concurrently and requires all secondaries to exit. It does not terminate the owner. It intentionally is not a headless CI check. `npm run desktop` while an owner runs should activate it and return without starting Vite.
 

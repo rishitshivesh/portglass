@@ -55,7 +55,7 @@ After exporting the signing identity/team/profile described in the Apple guide:
 npm run release:local -- 0.1.0
 ```
 
-The command runs Biome, rustfmt, frontend/release tests and native collector/singleton tests, builds both architectures with Tauri, and signs the app using the local certificate. It submits a temporary ZIP to Apple through the named Keychain profile, requires Accepted status and staples the app ticket.
+The command installs locked npm dependencies, runs Biome, rustfmt, frontend/release tests and native collector/singleton tests, builds both architectures with Tauri using a locked Cargo graph, and signs the app using the local certificate. Source/lockfile changes during the build stop notarization. It submits a temporary ZIP to Apple through the named Keychain profile, requires Accepted status and staples the app ticket.
 
 It then creates ZIP, TAR.GZ and a drag-to-Applications DMG. The DMG is signed, submitted to Apple and stapled separately. App identity/version/minimum OS, both executable architectures, strict code signing, expected team, Gatekeeper assessment and stapled tickets are checked. Both archives are extracted and verified again. All three files are hashed before the manifest and SHA256SUMS are accepted.
 
@@ -79,7 +79,7 @@ When the draft is reviewed and ready:
 npm run release:publish -- 0.1.0
 ```
 
-This validates the local downloads and generated cask, publishes the draft as the latest stable GitHub Release and updates `Casks/portglass.rb` through GitHub's API using local CLI authentication. No Actions runner, GitHub signing secrets or cross-repository PAT is needed.
+This validates the local downloads and generated cask, downloads the GitHub assets again and verifies their manifest/checksums against the local build, publishes the draft as the latest stable GitHub Release and updates `Casks/portglass.rb` through GitHub's API using local CLI authentication. No Actions runner, GitHub signing secrets or cross-repository PAT is needed.
 
 Homebrew uses the exact ZIP version and checksum. Cask updates reject drafts/prereleases, stale non-latest events, downgrades and same-version checksum replacement. The Contents API uses the existing file SHA for conflict detection and preserves unrelated files. If branch rules prohibit writing the cask, it fails rather than bypassing protection; commit the generated cask through a normal PR.
 

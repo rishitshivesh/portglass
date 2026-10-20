@@ -123,6 +123,7 @@ if (process.argv[1] === resolve(import.meta.filename)) {
       "APPLE_API_KEY_PATH",
     ])
       delete env[key];
+    run("npm", ["ci"]);
     for (const script of [
       "check",
       "check:rust",
@@ -133,6 +134,7 @@ if (process.argv[1] === resolve(import.meta.filename)) {
     run(process.execPath, [
       resolve(root, "scripts/desktop.mjs"),
       "test:core",
+      "--locked",
       "--lib",
       "--bin",
       "portglass",
@@ -145,7 +147,13 @@ if (process.argv[1] === resolve(import.meta.filename)) {
       "--bundles",
       "app",
       "--ci",
+      "--",
+      "--locked",
     ]);
+    if (capture("git", ["status", "--porcelain"]))
+      throw new Error(
+        "Build modified tracked source or lockfiles; review and retag before notarization",
+      );
     mkdirSync(output, { recursive: true });
     const app = resolve(
       root,

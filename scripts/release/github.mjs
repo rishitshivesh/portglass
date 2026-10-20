@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { verifyDistributions } from "./artifact.mjs";
+import { verifyDistributions, verifyReleaseFiles } from "./artifact.mjs";
 import {
   compareVersions,
   distributionNames,
@@ -21,7 +22,12 @@ const config = validateConfig(
 );
 const output = resolve(root, "release-assets", tag);
 const run = (binary, args, options = {}) =>
-  execFileSync(binary, args, { cwd: root, stdio: "inherit", ...options });
+  execFileSync(binary, args, {
+    cwd: root,
+    env: { ...process.env, GH_HOST: "github.com" },
+    stdio: "inherit",
+    ...options,
+  });
 const capture = (binary, args) =>
   run(binary, args, {
     encoding: "utf8",
@@ -94,6 +100,30 @@ if (command === "upload") {
   ]);
   console.log("Uploaded a GitHub draft. Review and test it before publishing.");
 } else {
+  const downloaded = mkdtempSync(resolve(tmpdir(), "portglass-download-"));
+  try {
+    run("gh", [
+      "release",
+      "download",
+      tag,
+      "--repo",
+      config.repository,
+      "--dir",
+      downloaded,
+      ...[
+        ...distributionNames(version),
+        "SHA256SUMS",
+        "release-manifest.json",
+      ].flatMap((name) => ["--pattern", name]),
+    ]);
+    const remoteManifest = verifyReleaseFiles(downloaded, config, version);
+    if (JSON.stringify(remoteManifest) !== JSON.stringify(manifest))
+      throw new Error(
+        "GitHub downloads differ from the locally verified release",
+      );
+  } finally {
+    rmSync(downloaded, { recursive: true, force: true });
+  }
   run(process.execPath, [
     resolve(root, "scripts/release/publish-cask.mjs"),
     tag,

@@ -82,6 +82,15 @@ export function verifyReleaseFiles(directory, config, version) {
     if (entry.sha256 !== sha256(bytes) || entry.bytes !== bytes.length)
       throw new Error(`Distribution checksum mismatch: ${name}`);
   }
+  const checksumLines = distributionNames(version)
+    .map(
+      (name) =>
+        `${manifest.distributions.find((entry) => entry.name === name).sha256}  ${name}`,
+    )
+    .join("\n");
+  const checksumList = `${checksumLines}\n`;
+  if (readFileSync(resolve(directory, "SHA256SUMS"), "utf8") !== checksumList)
+    throw new Error("SHA256SUMS does not match the verified manifest");
   return manifest;
 }
 export function verifyDistributions(directory, config, version, expectedTeam) {

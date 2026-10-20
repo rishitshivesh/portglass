@@ -33,7 +33,14 @@ if (dryRun !== "--publish") {
 }
 const request = async (path, options = {}) => {
   const endpoint = `repos/${config.repository}${path ? `/${path}` : ""}`;
-  const args = ["api", endpoint, "--method", options.method ?? "GET"];
+  const args = [
+    "api",
+    "--hostname",
+    "github.com",
+    endpoint,
+    "--method",
+    options.method ?? "GET",
+  ];
   if (options.body) args.push("--input", "-");
   try {
     return JSON.parse(
