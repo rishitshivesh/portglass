@@ -57,3 +57,15 @@ The user clarified that nested build files should be represented by one outer fo
 An explicit common-developer-locations scan shares one deadline/entry budget and hard-link identity set across nonoverlapping roots. Versioned JSON is sufficient for four local scan results, bounded to 8 MB, using private permissions and atomic replacement. Results have timestamps, cached/fresh status, 15-minute reuse, forced rescan and clearing. Cached IDs are distinct from live action authority and cannot authorize cleanup. This supersedes ADR-004 only for local storage metadata; there is no process/session history or automatic scan scheduler.
 
 Container discovery supports multiple local Docker-compatible socket layouts without changing the user's active context or depending on Docker Desktop. Each usage request requires a discovered endpoint ID; remote URLs remain unavailable. Dev Tools derives one-count-per-process groups from metadata and bounded same-user ancestry, labels generic runtimes conservatively and presents RSS limitations explicitly.
+
+## ADR-010: signed direct downloads, GitHub Releases and Homebrew
+
+The user requested Homebrew distribution, GitHub-hosted releases and documentation, and explicitly required signing before public distribution. Stable versions synchronize npm/Tauri/Cargo and lockfiles; the displayed UI version comes from the same manifest. Universal macOS builds retain the stable app identity and configure macOS 12 as minimum. No placeholder cask, unsigned public fallback or in-app updater is introduced.
+
+The application repository is also a custom tap, accessed with an explicit Git URL. Versioned artifacts and exact hashes generate the cask; guards reject prereleases, non-latest events, downgrades and checksum replacement. Published artifacts are never overwritten. Initial Actions-based automation was superseded by ADR-011 when the user said workflows cannot run.
+
+## ADR-011: local signing and multi-format publication
+
+Build/sign/notarize on the maintainer's Mac, using a local Developer ID Application identity and a named Keychain notarization profile. GitHub holds public downloads but receives no Apple private keys or signing secrets. The local helper requires clean tagged source, runs quality/native tests, builds universal, notarizes/staples the app, creates ZIP/TAR.GZ plus a drag-to-Applications DMG, notarizes/staples that DMG, and verifies all hashes and extracted signatures before upload.
+
+Local commands upload a GitHub draft, let the maintainer review, then publish and synchronize the cask via local gh authentication. There are no automatic release workflows or tag-triggered jobs; the remaining CI workflow is manual-only. The v2 release manifest covers all three formats. Signing identity and Intel Rust support are currently missing locally, so no signed public release has been produced. See docs/releases/apple-signing.md and the local runbook for setup and recovery. The source license remains unselected.

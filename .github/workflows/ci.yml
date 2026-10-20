@@ -1,21 +1,30 @@
 name: macOS desktop checks
-on: [push, pull_request]
+on: workflow_dispatch
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable action
         with:
+          toolchain: 1.91.0
           components: rustfmt
       - run: npm ci
       - run: npm run check
       - run: npm run check:rust
       - run: npm run test:frontend
+      - run: npm run test:release
+      - name: Verify application version consistency
+        run: node --input-type=module -e 'import fs from "node:fs"; import {verifyProject} from "./scripts/release/project.mjs"; verifyProject(`v${JSON.parse(fs.readFileSync("package.json")).version}`);'
       - run: npm run build
       - run: npm run test:core
       - run: node scripts/desktop.mjs test:core --bin portglass

@@ -1,0 +1,6 @@
+{
+  "repository": "rishitshivesh/portglass",
+  "bundleId": "dev.portglass.desktop",
+  "appName": "Portglass",
+  "minimumMacOS": "12.0"
+}

@@ -15,7 +15,15 @@
     "format:rust": "node scripts/rustfmt.mjs",
     "check:rust": "node scripts/rustfmt.mjs --check",
     "format:docs": "prettier --write \"**/*.md\" \".github/**/*.yml\" \".vscode/*.json\" --ignore-path .gitignore",
-    "test:frontend": "node --experimental-strip-types --test src/features/observations/snapshot-controller.test.ts src/features/agents/agent-status.test.ts src/features/dev-tools/classify.test.ts"
+    "test:frontend": "node --experimental-strip-types --test src/features/observations/snapshot-controller.test.ts src/features/agents/agent-status.test.ts src/features/dev-tools/classify.test.ts",
+    "test:release": "node --test scripts/release/core.test.mjs",
+    "release:verify": "node scripts/release/project.mjs verify",
+    "release:version": "node scripts/release/project.mjs bump",
+    "release:doctor": "node scripts/release/local.mjs doctor",
+    "release:local": "node scripts/release/local.mjs build",
+    "release:upload": "node scripts/release/github.mjs upload",
+    "release:publish": "node scripts/release/github.mjs publish",
+    "release:cask": "node scripts/release/github.mjs cask"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",
