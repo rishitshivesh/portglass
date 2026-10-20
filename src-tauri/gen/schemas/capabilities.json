@@ -1,0 +1,1 @@
+{"main":{"identifier":"main","description":"Main window has core defaults only; no shell, filesystem or network plugins.","local":true,"windows":["main"],"permissions":["core:default"]}}
