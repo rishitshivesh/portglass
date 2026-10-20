@@ -108,7 +108,19 @@ export function CollectorsView({
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-medium">
-                Docker · Homebrew · Redis · Provider metadata
+                Developer storage · Docker usage
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                On demand from Storage. Folder selection or an explicit local
+                Docker query is required; neither polls automatically.
+              </p>
+            </div>
+            <Badge variant="outline">On demand</Badge>
+          </div>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">
+                Homebrew · Redis · Provider metadata
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Deferred. No connections, hooks or file reads.

@@ -2,7 +2,6 @@ use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Manager,
 };
 
 pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
@@ -11,15 +10,10 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let menu = Menu::with_items(app, &[&show, &quit])?;
     TrayIconBuilder::new()
         .icon(tray_icon())
-        .tooltip("Portglass · read-only")
+        .tooltip("Portglass")
         .menu(&menu)
         .on_menu_event(|app, event| match event.id.as_ref() {
-            "show" => {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
-            }
+            "show" => crate::lifecycle::show(app),
             "quit" => app.exit(0),
             _ => {}
         })

@@ -1,4 +1,4 @@
-name: macOS read-only slice
+name: macOS desktop checks
 on: [push, pull_request]
 jobs:
   verify:
@@ -18,4 +18,5 @@ jobs:
       - run: npm run test:frontend
       - run: npm run build
       - run: npm run test:core
+      - run: node scripts/desktop.mjs test:core --bin portglass
       - run: node scripts/desktop.mjs build --debug --no-bundle

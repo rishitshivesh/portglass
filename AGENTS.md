@@ -1,6 +1,6 @@
 # Portglass engineering conventions
 
-- Keep the PRD's Tauri + React/TypeScript + Rust architecture and read-only boundaries. Sensitive collectors and control actions require a separate scoped implementation and review.
+- Keep the PRD's Tauri + React/TypeScript + Rust architecture and read-only boundaries. Sensitive collectors and control actions require a separate scoped implementation and review. The scoped native Trash controls and explicit storage scans are documented in docs/expansion-scope.md; preserve their confirmation, expiry and identity checks. Cached results must never restore action authority.
 - Organize frontend code by feature under `src/features`; keep app composition in `src/app`, reusable UI in `src/components`, and pure utilities in `src/lib`. Keep IPC transport and collection lifecycle outside visual components.
 - Use the official shadcn components in `src/components/ui` for React controls, surfaces and overlays. Compose their variants and semantic theme tokens rather than introducing duplicate controls or component-specific color overrides.
 - Use direct module imports. Keep the entrypoint small, inputs typed, and resource provenance explicit.

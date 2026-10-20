@@ -1,4 +1,12 @@
-import { Layers, Network, Settings, Sparkles, Terminal } from "lucide-react";
+import {
+  Code2,
+  HardDrive,
+  Layers,
+  Network,
+  Settings,
+  Sparkles,
+  Terminal,
+} from "lucide-react";
 export const navigation = [
   {
     name: "Overview",
@@ -26,6 +34,20 @@ export const navigation = [
     title: "Agents, with evidence.",
     description:
       "Detected processes, with unverified activity clearly labeled.",
+  },
+  {
+    name: "Dev Tools",
+    icon: Code2,
+    title: "Where your development memory goes.",
+    description:
+      "IDEs, SDKs, language runtimes, local services and container hosts, grouped from observed processes.",
+  },
+  {
+    name: "Storage",
+    icon: HardDrive,
+    title: "Developer storage, accounted for.",
+    description:
+      "Inspect selected folders and local Docker usage. Review cleanup before making changes.",
   },
   {
     name: "Collectors",

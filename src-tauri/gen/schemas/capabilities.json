@@ -1,1 +1,1 @@
-{"main":{"identifier":"main","description":"Main window has core defaults only; no shell, filesystem or network plugins.","local":true,"windows":["main"],"permissions":["core:default"]}}
+{"main":{"identifier":"main","description":"Main window has core defaults only; no frontend shell, filesystem, dialog or network plugin permissions. Native Rust owns scoped storage operations.","local":true,"windows":["main"],"permissions":["core:default"]}}

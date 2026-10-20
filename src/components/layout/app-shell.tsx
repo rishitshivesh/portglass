@@ -99,7 +99,7 @@ export function AppShell({
           <div className="flex items-center gap-3">
             <Badge variant="outline">
               <Lock data-icon="inline-start" />
-              Read-only
+              {page === "Storage" ? "Reviewed controls" : "Read-only"}
             </Badge>
             <span className="hidden text-xs text-muted-foreground sm:inline">
               {desktopAvailable ? "Local connection" : "Browser preview"}

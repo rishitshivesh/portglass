@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { AgentsView } from "@/features/agents/agents-view";
 import { CollectorsView } from "@/features/collectors/collectors-view";
+import { DevToolsView } from "@/features/dev-tools/dev-tools-view";
 import { ObservationToolbar } from "@/features/observations/components/observation-toolbar";
 import { PortsTable } from "@/features/observations/components/ports-table";
 import { ProcessesTable } from "@/features/observations/components/processes-table";
@@ -30,6 +31,7 @@ import type { CollectorSettings } from "@/features/observations/snapshot-control
 import { desktopAvailable } from "@/features/observations/transport";
 import { useObservations } from "@/features/observations/use-observations";
 import { OverviewView } from "@/features/overview/overview-view";
+import { StorageView } from "@/features/storage/storage-view";
 import { formatTime } from "@/lib/format";
 import type { Listener, Process } from "@/types";
 
@@ -110,18 +112,20 @@ export function App() {
               {currentPage.description}
             </p>
           </div>
-          <Button
-            variant="outline"
-            disabled={loading || !desktopAvailable}
-            onClick={() => void refresh()}
-          >
-            {loading ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <RefreshCw data-icon="inline-start" />
-            )}
-            {loading ? "Observing…" : "Refresh"}
-          </Button>
+          {page !== "Storage" && (
+            <Button
+              variant="outline"
+              disabled={loading || !desktopAvailable}
+              onClick={() => void refresh()}
+            >
+              {loading ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <RefreshCw data-icon="inline-start" />
+              )}
+              {loading ? "Observing…" : "Refresh"}
+            </Button>
+          )}
         </div>
       </div>
       {!desktopAvailable && (
@@ -138,13 +142,15 @@ export function App() {
           </Button>
         </ObservationAlert>
       )}
-      <ObservationToolbar
-        query={query}
-        onQuery={setQuery}
-        inputRef={search}
-        autoRefresh={autoRefresh}
-        onAutoRefresh={setAutoRefresh}
-      />
+      {page !== "Storage" && (
+        <ObservationToolbar
+          query={query}
+          onQuery={setQuery}
+          inputRef={search}
+          autoRefresh={autoRefresh}
+          onAutoRefresh={setAutoRefresh}
+        />
+      )}
       {data?.capabilities
         .filter((capability) => capability.state === "error")
         .map((capability) => (
@@ -206,6 +212,17 @@ export function App() {
       {page === "AI Agents" && (
         <AgentsView agents={filtered.agents} onInspect={inspect} />
       )}
+      {page === "Dev Tools" && (
+        <DevToolsView
+          processes={data?.processes ?? []}
+          query={deferredQuery}
+          enabled={settings.processesEnabled}
+          onInspect={inspect}
+        />
+      )}
+      <div hidden={page !== "Storage"}>
+        <StorageView />
+      </div>
       {page === "Collectors" && (
         <CollectorsView
           settings={settings}
@@ -216,7 +233,7 @@ export function App() {
       <footer className="flex flex-wrap justify-between gap-3 border-t py-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-2">
           <ShieldCheck className="size-3" />
-          Read-only by design
+          Observe by default · cleanup requires confirmation
         </span>
         <span>
           {data

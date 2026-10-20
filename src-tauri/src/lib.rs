@@ -4,6 +4,7 @@ mod collectors;
 pub mod focus;
 mod models;
 mod parsers;
+pub mod storage;
 
 pub use collectors::collect;
 pub use models::{Capability, Listener, Process, Snapshot};

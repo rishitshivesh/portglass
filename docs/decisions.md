@@ -8,9 +8,9 @@ The user approved Tauri 2, React/TypeScript and Rust, accepting build/setup time
 
 ## ADR-002: snapshot IPC, read-only host adapter
 
-React invokes one Rust command with two boolean collector switches. Rust runs fixed absolute executable paths and allowlisted arguments, without a shell and with an empty environment except `LC_ALL=C`. Command output is bounded to 2 MB and 4 seconds. The renderer receives no arbitrary command, path, socket, environment or subprocess interface. There is no production HTTP monitoring server.
+The initial observation adapter invokes a Rust snapshot command with two boolean collector switches. Subsequent typed commands are documented below. Rust runs fixed absolute executable paths and allowlisted arguments, without a shell and with an empty environment except `LC_ALL=C`. Command output is bounded to 2 MB and 4 seconds. The renderer receives no arbitrary command, socket, environment or subprocess interface. Folder paths displayed by Storage originate in a native user selection, not frontend authority. There is no production HTTP monitoring server.
 
-The adapter is macOS-only and exposes explicit unsupported status elsewhere. PID/start/UID/basename identity and TCP/family/address/port/PID endpoint identity support inspection. Control actions are absent; no snapshot can authorize a termination.
+The adapter is macOS-only and exposes explicit unsupported status elsewhere. PID/start/UID/basename identity and TCP/family/address/port/PID endpoint identity support inspection. No process termination is exposed; snapshot evidence cannot authorize one.
 
 ## ADR-003: evidence before session claims
 
@@ -36,4 +36,24 @@ The controller also fixes stale in-flight results/errors after collector-setting
 
 The user requested focusing an application's window and understanding agent state/attention. Implemented an on-demand AppKit activation request through verified, same-user process ancestry; this navigates to an existing application without arbitrary launch capabilities or Accessibility. Port-origin navigation also rechecks listener ownership. Exact tab/session focus is unsupported.
 
-Activity and attention remain explicitly unknown in the running product until an authorized provider event adapter is connected. A tested normalized status model handles fresh correlated provider evidence; CPU/idle heuristics cannot manufacture certainty. Official Claude hooks and Codex App Server docs establish feasible signal mechanisms but do not prove access to all independently running sessions. See `docs/expansion-scope.md` for the next integration phase and the earlier storage/cleanup requirement, which is planned rather than implemented.
+Activity and attention remain explicitly unknown in the running product until an authorized provider event adapter is connected. A tested normalized status model handles fresh correlated provider evidence; CPU/idle heuristics cannot manufacture certainty. Official Claude hooks and Codex App Server docs establish feasible signal mechanisms but do not prove access to all independently running sessions. See `docs/expansion-scope.md` for the next integration phase and storage implementation boundaries.
+
+## ADR-007: one owner per macOS user and app identity
+
+Retain a kernel advisory lock for the full application lifetime, before Tauri initializes. Private local Unix IPC accepts activation only; secondary launches exit without creating collectors/windows. Fail closed on authority errors. A synchronous socket bind plus the kernel lock prevents cold-start races; the official plugin was not retained after source review found asynchronous binding and fail-open branches. Closing hides the existing window, and explicit Quit exits. The dev launcher probes the owner before starting Vite. See the singleton section in `docs/expansion-scope.md` for scope, crash recovery and legacy migration.
+
+## ADR-008: selected-root storage with reviewed native Trash
+
+The user expanded scope from observation to developer storage and controls. Metadata-only, bounded, cancellable scans run only after a native folder selection. Resource boundaries prevent nested double counting; hard links are deduplicated and logical versus allocated bytes remain separate. Process/session observations and all action authority remain in memory; bounded storage metadata caching is described in ADR-009. This supersedes the initial no-controls scope for the narrowly described cleanup operations only.
+
+Cleanup accepts scan-specific IDs, expires after two minutes, requires a typed basename, serializes against scans and revalidates target/ancestor identity. Native macOS Trash is used explicitly through NSFileManager; no permanent-delete fallback, shell, automation permission or empty-Trash operation. Partial scans, caches, ambiguous build directories and selected roots cannot be trashed. Active-use and dependency-impact detection are still unavailable, and the path-based OS API is not atomic against concurrent path mutation.
+
+Docker usage is an explicit, local-only `system df` observation with empty environment/config, fixed executable/arguments and bounded output. Docker estimates remain separate from filesystem sizes. Object controls and remote endpoints are deferred.
+
+## ADR-009: whole-folder storage summaries, bounded cache and developer footprint
+
+The user clarified that nested build files should be represented by one outer folder total, asked for a more intuitive cached system-scan workflow, local Docker alternatives and Dev Tools memory. Build outputs are grouped by outer resource with contextual manifest markers instead of exposing generic nested build directories. Storage summaries separate build outputs, dependencies, caches and SDK/simulator storage; only 24 resource cards render per page.
+
+An explicit common-developer-locations scan shares one deadline/entry budget and hard-link identity set across nonoverlapping roots. Versioned JSON is sufficient for four local scan results, bounded to 8 MB, using private permissions and atomic replacement. Results have timestamps, cached/fresh status, 15-minute reuse, forced rescan and clearing. Cached IDs are distinct from live action authority and cannot authorize cleanup. This supersedes ADR-004 only for local storage metadata; there is no process/session history or automatic scan scheduler.
+
+Container discovery supports multiple local Docker-compatible socket layouts without changing the user's active context or depending on Docker Desktop. Each usage request requires a discovered endpoint ID; remote URLs remain unavailable. Dev Tools derives one-count-per-process groups from metadata and bounded same-user ancestry, labels generic runtimes conservatively and presents RSS limitations explicitly.
